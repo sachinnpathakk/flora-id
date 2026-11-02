@@ -1,3 +1,4 @@
+
 const fileInput = document.getElementById('file-input');
 const cameraInput = document.getElementById('camera-input');
 const cameraBtn = document.getElementById('camera-btn');
@@ -20,6 +21,7 @@ const plantDescEl = document.getElementById('plant-desc');
 const confidenceEl = document.getElementById('confidence');
 
 let currentPlantUrl = "";
+// Using the key you provided
 const API_KEY = "2b10MZl1ODGJMGCwky6iPXpWu";
 
 cameraBtn.addEventListener('click', () => cameraInput.click());
@@ -54,8 +56,8 @@ identifyBtn.addEventListener('click', async () => {
         const plantData = await identifyPlant();
         await fetchWikipediaData(plantData.name, plantData.confidence);
     } catch (error) {
-        console.error(error);
-        alert("Identification failed. Please try a clearer photo.");
+        console.error("Detailed Error:", error);
+        alert("Error: " + error.message + ". Please check if your API key is active.");
         showSection(uploadSection);
     }
 });
@@ -64,6 +66,7 @@ async function identifyPlant() {
     const imageSrc = imagePreview.src;
     const base64Image = imageSrc.split(',')[1];
 
+    // We use the v2 identify endpoint
     const response = await fetch('https://api.plant.id/v2/identify', {
         method: 'POST',
         headers: {
@@ -76,8 +79,22 @@ async function identifyPlant() {
         })
     });
 
-    if (!response.ok) throw new Error('API request failed');
+    if (response.status === 401) {
+        throw new Error("Invalid API Key. Please check your Plant.id dashboard.");
+    }
+    if (response.status === 429) {
+        throw new Error("Free credits exhausted.");
+    }
+    if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+    }
+    
     const data = await response.json();
+    
+    if (!data.suggestions || data.suggestions.length === 0) {
+        throw new Error("AI could not find a match for this image.");
+    }
+
     const suggestion = data.suggestions[0].plant_details;
     const confidence = data.suggestions[0].probability * 100;
 
