@@ -20,11 +20,10 @@ const plantDescEl = document.getElementById('plant-desc');
 const confidenceEl = document.getElementById('confidence');
 
 let currentPlantUrl = "";
+const API_KEY = "2b10MZl1ODGJMGCwky6iPXpWu";
 
-// Camera trigger
 cameraBtn.addEventListener('click', () => cameraInput.click());
 
-// Handle image selection
 [fileInput, cameraInput].forEach(input => {
     input.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -52,35 +51,43 @@ identifyBtn.addEventListener('click', async () => {
     resultContent.classList.add('hidden');
 
     try {
-        // Step 1: Identify the plant
-        // Note: In a production environment, you'd use an API like Plant.id
-        // For this dev demo, we'll simulate the AI identification delay and result
-        const plantData = await simulatePlantIdentification();
-        
-        // Step 2: Fetch data from Wikipedia
-        await fetchWikipediaData(plantData.name);
-        
+        const plantData = await identifyPlant();
+        await fetchWikipediaData(plantData.name, plantData.confidence);
     } catch (error) {
-        alert("Something went wrong analyzing the image. Please try again.");
+        console.error(error);
+        alert("Identification failed. Please try a clearer photo.");
         showSection(uploadSection);
     }
 });
 
-async function simulatePlantIdentification() {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // For the demo, we'll simulate a few common results
-    const mockResults = [
-        { name: "Aloe Vera", confidence: "98%" },
-        { name: "Lavender", confidence: "92%" },
-        { name: "Monstera Deliciosa", confidence: "87%" },
-        { name: "Basil", confidence: "95%" }
-    ];
-    return mockResults[Math.floor(Math.random() * mockResults.length)];
+async function identifyPlant() {
+    const imageSrc = imagePreview.src;
+    const base64Image = imageSrc.split(',')[1];
+
+    const response = await fetch('https://api.plant.id/v2/identify', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Api-Key': API_KEY
+        },
+        body: JSON.stringify({
+            images: [base64Image],
+            similar_images: true
+        })
+    });
+
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+    const suggestion = data.suggestions[0].plant_details;
+    const confidence = data.suggestions[0].probability * 100;
+
+    return {
+        name: suggestion.common_names[0] || suggestion.scientific_name,
+        confidence: Math.round(confidence) + "%"
+    };
 }
 
-async function fetchWikipediaData(plantName) {
+async function fetchWikipediaData(plantName, confidence) {
     try {
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(plantName)}&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
@@ -91,7 +98,6 @@ async function fetchWikipediaData(plantName) {
         const pageTitle = searchData.query.search[0].title;
         currentPlantUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle)}`;
         
-        // Fetch page summary and image
         const detailsUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=original&pithumbsize=400&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
         const detailsRes = await fetch(detailsUrl);
         const detailsData = await detailsRes.json();
@@ -100,19 +106,19 @@ async function fetchWikipediaData(plantName) {
         const pageId = Object.keys(pages)[0];
         const page = pages[pageId];
         
-        // Update UI
         plantNameEl.innerText = pageTitle;
         plantDescEl.innerText = page.extract ? page.extract.substring(0, 200) + "..." : "No description available.";
         wikiImg.src = page.thumbnail ? page.thumbnail.source : "https://via.placeholder.com/400?text=No+Image";
-        confidenceEl.innerText = "Match Found";
+        confidenceEl.innerText = confidence + " Match";
         
         loader.classList.add('hidden');
         resultContent.classList.remove('hidden');
     } catch (e) {
         console.error(e);
-        plantNameEl.innerText = "Unknown Plant";
-        plantDescEl.innerText = "We couldn't find a Wikipedia match for this specific plant.";
-        wikiImg.src = "https://via.placeholder.com/400?text=Not+Found";
+        plantNameEl.innerText = "Plant Identified";
+        plantDescEl.innerText = "We identified the plant, but couldn't find a matching Wikipedia page.";
+        wikiImg.src = "https://via.placeholder.com/400?text=No+Wiki+Image";
+        confidenceEl.innerText = confidence + " Match";
         loader.classList.add('hidden');
         resultContent.classList.remove('hidden');
     }
