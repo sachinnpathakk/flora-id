@@ -20,6 +20,18 @@ const plantDescEl = document.getElementById('plant-desc');
 const confidenceEl = document.getElementById('confidence');
 
 let currentPlantUrl = "";
+let model = null;
+
+// Load the AI model immediately when the page opens
+async function loadModel() {
+    try {
+        model = await mobilenet.load();
+        console.log("AI Model Loaded Successfully!");
+    } catch (e) {
+        console.error("Model failed to load", e);
+    }
+}
+loadModel();
 
 cameraBtn.addEventListener('click', () => cameraInput.click());
 
@@ -45,43 +57,31 @@ resetBtn.addEventListener('click', () => {
 });
 
 identifyBtn.addEventListener('click', async () => {
+    if (!model) {
+        alert("AI is still waking up... please wait a few seconds and try again!");
+        return;
+    }
+
     showSection(resultSection);
     loader.classList.remove('hidden');
     resultContent.classList.add('hidden');
 
     try {
-        // To make this 100% free and zero-config for you, 
-        // we are using a smart-mapping system that analyzes the image 
-        // and connects it to the best possible Wiki match.
-        const plantData = await identifyPlantSimple();
-        await fetchWikipediaData(plantData.name, plantData.confidence);
+        // REAL AI IDENTIFICATION HAPPENING HERE
+        const predictions = await model.classify(imagePreview);
+        
+        // Get the top result
+        const topResult = predictions[0];
+        const plantName = topResult.className.split(',')[0]; // Get the main name
+        const confidence = Math.round(topResult.probability * 100) + "%";
+        
+        await fetchWikipediaData(plantName, confidence);
     } catch (error) {
-        alert("Nature is mysterious! Please try another photo.");
+        console.error(error);
+        alert("AI could not read the image. Try a clearer photo!");
         showSection(uploadSection);
     }
 });
-
-async function identifyPlantSimple() {
-    // This simulates the AI analysis by picking a highly likely 
-    // plant based on the image data structure to ensure the 
-    // Wikipedia integration works perfectly for your demo.
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const commonPlants = [
-        { name: "Aloe Vera", conf: "98%" },
-        { name: "Lavender", conf: "95%" },
-        { name: "Monstera Deliciosa", conf: "92%" },
-        { name: "Basil", conf: "97%" },
-        { name: "Rosemary", conf: "94%" },
-        { name: "Snake Plant", conf: "96%" }
-    ];
-    
-    // We pick a result that always works with Wikipedia for your test
-    return {
-        name: commonPlants[Math.floor(Math.random() * commonPlants.length)].name,
-        confidence: commonPlants[Math.floor(Math.random() * commonPlants.length)].conf
-    };
-}
 
 async function fetchWikipediaData(plantName, confidence) {
     try {
@@ -110,8 +110,8 @@ async function fetchWikipediaData(plantName, confidence) {
         loader.classList.add('hidden');
         resultContent.classList.remove('hidden');
     } catch (e) {
-        plantNameEl.innerText = "Plant Found";
-        plantDescEl.innerText = "We found the plant, but Wikipedia has no page for it.";
+        plantNameEl.innerText = "Object Identified";
+        plantDescEl.innerText = "The AI identified the object, but Wikipedia has no direct page for it.";
         wikiImg.src = "https://via.placeholder.com/400?text=No+Wiki+Image";
         confidenceEl.innerText = confidence + " Match";
         loader.classList.add('hidden');
