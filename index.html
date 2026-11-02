@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloraID | Plant Identification</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Flora<span>ID</span></h1>
+            <p>Discover the nature around you</p>
+        </header>
+
+        <main>
+            <div id="upload-section" class="card">
+                <div class="upload-box" id="drop-zone">
+                    <div class="icon">🌿</div>
+                    <p>Upload a photo or take a picture of a plant, herb, or shrub</p>
+                    
+                    <div class="btn-group">
+                        <label for="file-input" class="btn btn-primary">Upload Image</label>
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                        
+                        <button id="camera-btn" class="btn btn-secondary">Open Camera</button>
+                    </div>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+                </div>
+            </div>
+
+            <div id="preview-section" class="card hidden">
+                <h2>Preview Image</h2>
+                <div class="image-preview-container">
+                    <img id="image-preview" src="" alt="Plant preview">
+                </div>
+                <div class="btn-group">
+                    <button id="identify-btn" class="btn btn-primary">Identify Plant</button>
+                    <button id="reset-btn" class="btn btn-text">Change Photo</button>
+                </div>
+            </div>
+
+            <div id="result-section" class="card hidden">
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <p>Analyzing nature...</p>
+                </div>
+                
+                <div id="result-content" class="hidden">
+                    <div class="result-header">
+                        <h2 id="plant-name">Loading...</h2>
+                        <span id="confidence" class="badge">0% Match</span>
+                    </div>
+                    
+                    <div class="comparison-grid">
+                        <div class="comp-box">
+                            <small>Your Photo</small>
+                            <img id="user-img-small" src="" alt="Your plant">
+                        </div>
+                        <div class="comp-box">
+                            <small>Wikipedia Match</small>
+                            <img id="wiki-img" src="" alt="Wikipedia plant">
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <p id="plant-desc">Fetching details from Wikipedia...</p>
+                    </div>
+
+                    <div class="action-footer">
+                        <p>Does this look correct?</p>
+                        <div class="btn-group">
+                            <button id="confirm-btn" class="btn btn-primary">Yes, take me to Wikipedia</button>
+                            <button id="retry-btn" class="btn btn-secondary">No, try again</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 FloraID. Built for Nature Lovers.</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
